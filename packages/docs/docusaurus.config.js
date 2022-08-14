@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'Medplum',
   tagline: 'Fast and easy healthcare dev',
-  url: 'https://docs.medplum.com',
+  url: 'https://www.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
   onBrokenLinks: 'throw',
@@ -24,7 +24,6 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
-          routeBasePath: '/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             // Example: return an hardcoded list of static sidebar items
             let items = await defaultSidebarItemsGenerator(args);
@@ -90,20 +89,20 @@ const config = {
             type: 'doc',
             docId: 'home',
             position: 'left',
-            label: 'Home',
+            label: 'Docs',
           },
           {
-            to: '/tutorials',
+            to: '/docs/tutorials',
             label: 'Tutorials',
             position: 'left',
           },
           {
-            to: '/api',
+            to: '/docs/api',
             label: 'API',
             position: 'left',
           },
           {
-            to: '/contributing',
+            to: '/docs/contributing',
             label: 'Contributing',
             position: 'left',
           },
@@ -113,21 +112,44 @@ const config = {
             position: 'left',
           },
           {
-            href: 'https://github.com/medplum/medplum',
+            to: 'https://app.medplum.com',
+            label: 'Sign In',
+            position: 'right',
+          },
+          {
+            to: 'https://github.com/medplum/medplum',
             label: 'GitHub',
             position: 'right',
           },
         ],
       },
       footer: {
-        style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Medplum',
             items: [
               {
-                label: 'Tutorial',
-                to: '/tutorials',
+                html: `
+                <a href="/security"><img src="/img/compliance/soc.png" style="width: 45px; height: 45px; margin: 4px;" loading="lazy" alt="SOC"></a>
+                <a href="/security"><img src="/img/compliance/hipaa.png" style="width: 100px; height: 45px; margin: 4px;" loading="lazy" alt="HIPAA"></a>
+                  `,
+              },
+            ],
+          },
+          {
+            title: 'Developers',
+            items: [
+              {
+                label: 'Getting started',
+                to: '/docs/tutorials/api-basics/create-fhir-data',
+              },
+              {
+                label: 'Playing with Medplum',
+                to: '/docs/tutorials',
+              },
+              {
+                label: 'Documentation',
+                to: '/docs',
               },
             ],
           },
@@ -136,33 +158,53 @@ const config = {
             items: [
               {
                 label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/medplum',
+                to: 'https://stackoverflow.com/questions/tagged/medplum',
               },
               {
                 label: 'Discord',
-                href: 'https://discord.gg/UBAWwvrVeN',
+                to: 'https://discord.gg/UBAWwvrVeN',
               },
               {
                 label: 'Storybook',
-                href: 'https://docs.medplum.com/storybook/index.html',
+                to: 'https://docs.medplum.com/storybook/index.html',
+              },
+              {
+                label: 'GitHub',
+                to: 'https://github.com/medplum/medplum',
               },
             ],
           },
           {
-            title: 'More',
+            title: 'Company',
             items: [
+              {
+                label: 'About us',
+                to: '/about',
+              },
+              {
+                label: 'Services',
+                to: '/services',
+              },
+              {
+                label: 'Security',
+                to: '/security',
+              },
+              {
+                label: 'Terms of Service',
+                to: '/terms',
+              },
+              {
+                label: 'Privacy Policy',
+                to: '/privacy',
+              },
               {
                 label: 'Blog',
                 to: '/blog',
               },
-              {
-                label: 'GitHub',
-                href: 'https://github.com/medplum/medplum',
-              },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Medplum, Inc.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Orangebot, Inc.`,
       },
       prism: {
         theme: lightCodeTheme,
