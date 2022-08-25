@@ -8,11 +8,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Parameters
 
-This resource is a non-persisted resource used to pass information into and back from an [operation](/api/fhir/operations). It has no other use, and there is no RESTful endpoint associated with it.
+This resource is a non-persisted resource used to pass information into and back from an [operation](/docs/api/fhir/operations). It has no other use, and there is no RESTful endpoint associated with it.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +23,3 @@ This resource is a non-persisted resource used to pass information into and back
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-
