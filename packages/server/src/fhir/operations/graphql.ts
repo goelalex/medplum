@@ -10,12 +10,15 @@ import {
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import {
+  ASTNode,
+  DefinitionNode,
   DocumentNode,
   execute,
   ExecutionResult,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
+  GraphQLError,
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -30,14 +33,16 @@ import {
   GraphQLSchema,
   GraphQLString,
   GraphQLUnionType,
+  Kind,
   parse,
   validate,
+  ValidationContext,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
 import { asyncWrap } from '../../async';
+import { getJsonSchemaDefinition, getJsonSchemaResourceTypes } from '../jsonschema';
 import { Repository } from '../repo';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
-import { getJsonSchemaResourceTypes, getJsonSchemaDefinition } from '../jsonschema';
 import { parseSearchRequest } from '../search';
 import { getSearchParameters } from '../structure';
 import { sendOutcome } from './../outcomes';
@@ -98,7 +103,7 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const schema = getRootSchema();
-  const validationErrors = validate(schema, document);
+  const validationErrors = validate(schema, document, [depthLimit]);
   if (validationErrors.length > 0) {
     sendOutcome(res, badRequest('GraphQL validation error.'));
     return;
@@ -493,4 +498,91 @@ function fhirParamToGraphQLField(code: string): string {
 
 function graphQLFieldToFhirParam(code: string): string {
   return code.startsWith('_') ? code : code.replaceAll('_', '-');
+}
+
+// graphql-depth-limit
+// https://www.npmjs.com/package/graphql-depth-limit
+// https://unpkg.com/graphql-depth-limit@1.1.0/index.js
+
+const maxDepth = 5;
+
+function depthLimit(validationContext: ValidationContext): void {
+  try {
+    const { definitions } = validationContext.getDocument();
+    const fragments = getFragments(definitions);
+    const queries = getQueriesAndMutations(definitions);
+    const queryDepths: Record<string, number> = {};
+    for (const name in queries) {
+      queryDepths[name] = determineDepth(queries[name], fragments, 0, maxDepth, validationContext, name);
+    }
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
+
+function getFragments(definitions: Readonly<DefinitionNode[]>): Record<string, DefinitionNode> {
+  const result: Record<string, DefinitionNode> = {};
+  for (const definition of definitions) {
+    if (definition.kind === Kind.FRAGMENT_DEFINITION) {
+      result[definition.name.value] = definition;
+    }
+  }
+  return result;
+}
+
+function getQueriesAndMutations(definitions: Readonly<DefinitionNode[]>): Record<string, DefinitionNode> {
+  // this will actually get both queries and mutations. we can basically treat those the same
+  const result: Record<string, DefinitionNode> = {};
+  for (const definition of definitions) {
+    if (definition.kind === Kind.OPERATION_DEFINITION) {
+      result[definition.name?.value || ''] = definition;
+    }
+  }
+  return result;
+}
+
+function determineDepth(
+  node: ASTNode,
+  fragments: Record<string, ASTNode>,
+  depthSoFar: number,
+  maxDepth: number,
+  context: ValidationContext,
+  operationName: string
+): number {
+  if (depthSoFar > maxDepth) {
+    const error = new GraphQLError(`'${operationName}' exceeds maximum operation depth of ${maxDepth}`, {
+      nodes: [node],
+    });
+    context.reportError(error);
+    throw error;
+  }
+
+  switch (node.kind) {
+    case Kind.FIELD:
+      // by default, ignore the introspection fields which begin with double underscores
+      if (!node.selectionSet) {
+        return 0;
+      }
+      return (
+        1 +
+        Math.max(
+          ...node.selectionSet.selections.map((selection) =>
+            determineDepth(selection, fragments, depthSoFar + 1, maxDepth, context, operationName)
+          )
+        )
+      );
+    case Kind.FRAGMENT_SPREAD:
+      return determineDepth(fragments[node.name.value], fragments, depthSoFar, maxDepth, context, operationName);
+    case Kind.INLINE_FRAGMENT:
+    case Kind.FRAGMENT_DEFINITION:
+    case Kind.OPERATION_DEFINITION:
+      return Math.max(
+        ...node.selectionSet.selections.map((selection) =>
+          determineDepth(selection, fragments, depthSoFar, maxDepth, context, operationName)
+        )
+      );
+    default:
+      throw new Error('uh oh! depth crawler cannot handle: ' + node.kind);
+  }
 }
